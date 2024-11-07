@@ -1,0 +1,209 @@
+import javax.swing.*; import java.awt.*; import java.awt.event.*; import java.io.*; import java.util.ArrayList; 
+import javax.swing.table.DefaultTableModel; 
+ 
+ 
+public class LibraryManagementSystem extends JFrame { 
+private ArrayList<Book> books = new ArrayList<>(); 
+private JTextField titleField, authorField, isbnField, publisherField, searchField; 
+private DefaultTableModel tableModel; private JTable bookTable; 
+ 
+ 
+public LibraryManagementSystem() { 
+setTitle("Library Management System"); 
+setSize(800, 600); 
+setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); setLocationRelativeTo(null); // Center the window setLayout(new BorderLayout()); 
+ 
+// Create Tabbed Pane 
+JTabbedPane tabbedPane = new JTabbedPane(); 
+ 
+ 
+// Add Books Tab 
+tabbedPane.add("Add Book", createAddBookPanel()); tabbedPane.add("View Books", createViewBooksPanel()); tabbedPane.add("Search Books", createSearchBookPanel()); tabbedPane.add("Borrow/Return", createBorrowReturnPanel()); 
+ 
+add(tabbedPane, BorderLayout.CENTER); loadBooks(); // Load books from file at startup setVisible(true); 
+} 
+ 
+ 
+// Create the Add Book Panel private JPanel createAddBookPanel() { JPanel addBookPanel = new JPanel(); addBookPanel.setLayout(new BoxLayout(addBookPanel, BoxLayout.Y_AXIS)); addBookPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10)); 
+ 
+titleField = createInputField(addBookPanel, "Title:"); authorField = createInputField(addBookPanel, "Author:"); isbnField = createInputField(addBookPanel, "ISBN:"); publisherField = createInputField(addBookPanel, "Publisher:"); 
+ 
+JButton addButton = new JButton("Add Book"); addButton.setAlignmentX(Component.CENTER_ALIGNMENT); addButton.addActionListener(new AddBookListener()); addButton.setToolTipText("Add a new book to the library"); addBookPanel.add(addButton); 
+ 
+return addBookPanel; 
+} 
+ 
+ 
+// Create the View Books Panel private JPanel createViewBooksPanel() { 
+JPanel viewBooksPanel = new JPanel(new BorderLayout()); 
+viewBooksPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10)); 
+ 
+// Table for displaying books 
+tableModel = new DefaultTableModel(new String[]{"Title", "Author", "ISBN", "Publisher", 
+"Status"}, 0); bookTable = new JTable(tableModel); 
+JScrollPane scrollPane = new JScrollPane(bookTable); viewBooksPanel.add(scrollPane, BorderLayout.CENTER); 
+ 
+JButton deleteButton = new JButton("Delete Selected Book"); deleteButton.addActionListener(new DeleteBookListener()); deleteButton.setToolTipText("Remove the selected book from the library"); viewBooksPanel.add(deleteButton, BorderLayout.SOUTH); 
+ 
+return viewBooksPanel; 
+} 
+ 
+ 
+// Create the Search Book Panel 
+private JPanel createSearchBookPanel() { JPanel searchBookPanel = new JPanel(); searchBookPanel.setLayout(new BoxLayout(searchBookPanel, BoxLayout.Y_AXIS)); searchBookPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10)); searchField = new JTextField(20); 
+searchField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 
+searchField.getPreferredSize().height)); searchBookPanel.add(new JLabel("Enter title or author to search:")); searchBookPanel.add(searchField); 
+ 
+JButton searchButton = new JButton("Search"); 
+searchButton.setAlignmentX(Component.CENTER_ALIGNMENT); searchButton.addActionListener(new SearchBookListener()); searchButton.setToolTipText("Search for a book by title or author"); 
+searchBookPanel.add(Box.createRigidArea(new Dimension(0, 10))); // Add some space between 
+input and button searchBookPanel.add(searchButton); 
+ 
+ 
+return searchBookPanel; 
+} 
+ 
+ 
+// Create the Borrow/Return Panel 
+private JPanel createBorrowReturnPanel() { JPanel borrowReturnPanel = new JPanel(); borrowReturnPanel.setLayout(new BoxLayout(borrowReturnPanel, BoxLayout.Y_AXIS)); borrowReturnPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10)); 
+ 
+JButton borrowButton = new JButton("Borrow Selected Book"); borrowButton.setAlignmentX(Component.CENTER_ALIGNMENT); borrowButton.addActionListener(new BorrowBookListener()); borrowButton.setToolTipText("Borrow the selected book"); borrowReturnPanel.add(borrowButton); 
+ 
+JButton returnButton = new JButton("Return Selected Book"); returnButton.setAlignmentX(Component.CENTER_ALIGNMENT); returnButton.addActionListener(new ReturnBookListener()); returnButton.setToolTipText("Return the selected book"); 
+borrowReturnPanel.add(Box.createRigidArea(new Dimension(0, 10))); // Add space between 
+buttons borrowReturnPanel.add(returnButton); 
+ 
+ 
+return borrowReturnPanel; 
+} 
+ 
+ 
+// Utility method to create input fields 
+private JTextField createInputField(JPanel panel, String label) { JPanel inputPanel = new JPanel(); inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.X_AXIS)); inputPanel.add(new JLabel(label)); JTextField textField = new JTextField(20); inputPanel.add(textField); panel.add(inputPanel); panel.add(Box.createRigidArea(new Dimension(0, 10))); // Add some space between fields return textField; 
+} 
+ 
+ 
+// Inner class for the Book object 
+static class Book implements Serializable { String title, author, isbn, publisher; boolean borrowed; 
+ 
+public Book(String title, String author, String isbn, String publisher) { this.title = title; this.author = author; this.isbn = isbn; this.publisher = publisher; 
+this.borrowed = false; // Book is available by default 
+} 
+public String getStatus() { return borrowed ? "Borrowed" : "Available"; 
+} 
+ 
+ public Object[] toTableRow() { return new Object[]{title, author, isbn, publisher, getStatus()}; 
+} 
+} 
+ 
+ 
+// Listener for adding a book 
+class AddBookListener implements ActionListener { 
+@Override 
+public void actionPerformed(ActionEvent e) { 
+String title = titleField.getText(); 
+String author = authorField.getText(); 
+String isbn = isbnField.getText(); 
+String publisher = publisherField.getText(); 
+ 
+ if (!title.isEmpty() && !author.isEmpty() && !isbn.isEmpty() && !publisher.isEmpty()) { 
+Book book = new Book(title, author, isbn, publisher); books.add(book); 
+tableModel.addRow(book.toTableRow()); 
+clearFields(); 
+saveBooks(); // Save books to file 
+JOptionPane.showMessageDialog(null, "Book added successfully!"); } else { 
+JOptionPane.showMessageDialog(null, "Please fill all fields."); 
+} 
+} 
+ 
+ 
+private void clearFields() { titleField.setText(""); authorField.setText(""); isbnField.setText(""); publisherField.setText(""); 
+} 
+} 
+ 
+ 
+// Listener for borrowing a book 
+class BorrowBookListener implements ActionListener { 
+@Override 
+public void actionPerformed(ActionEvent e) { 
+int selectedRow = bookTable.getSelectedRow(); if (selectedRow >= 0) { 
+Book selectedBook = books.get(selectedRow); if (!selectedBook.borrowed) { 
+selectedBook.borrowed = true; tableModel.setValueAt(selectedBook.getStatus(), selectedRow, 4); JOptionPane.showMessageDialog(null, "Book borrowed successfully!"); } else { 
+JOptionPane.showMessageDialog(null, "This book is already borrowed."); 
+} 
+} else { 
+JOptionPane.showMessageDialog(null, "Please select a book to borrow."); 
+} 
+} 
+} 
+ 
+ 
+// Listener for returning a book 
+class ReturnBookListener implements ActionListener { 
+@Override 
+public void actionPerformed(ActionEvent e) { 
+int selectedRow = bookTable.getSelectedRow(); if (selectedRow >= 0) { 
+Book selectedBook = books.get(selectedRow); if (selectedBook.borrowed) { selectedBook.borrowed = false; tableModel.setValueAt(selectedBook.getStatus(), selectedRow, 4); JOptionPane.showMessageDialog(null, "Book returned successfully!"); 
+} else { 
+JOptionPane.showMessageDialog(null, "This book is not currently borrowed."); 
+} 
+} else { 
+JOptionPane.showMessageDialog(null, "Please select a book to return."); 
+} 
+} 
+} 
+ 
+ 
+// Listener for searching books 
+class SearchBookListener implements ActionListener { 
+@Override 
+public void actionPerformed(ActionEvent e) { 
+String query = searchField.getText().toLowerCase(); 
+DefaultTableModel searchResultsModel = new DefaultTableModel(new String[]{"Title", "Author", "ISBN", "Publisher", "Status"}, 0); 
+ 
+ 
+for (Book book : books) { if (book.title.toLowerCase().contains(query) || book.author.toLowerCase().contains(query)) 
+{ 
+searchResultsModel.addRow(book.toTableRow()); 
+} 
+} 
+ 
+JTable resultsTable = new JTable(searchResultsModel); 
+JOptionPane.showMessageDialog(null, new JScrollPane(resultsTable), "Search Results", 
+JOptionPane.PLAIN_MESSAGE); 
+} 
+} 
+ 
+ 
+// Listener for deleting a book 
+class DeleteBookListener implements ActionListener { 
+@Override 
+public void actionPerformed(ActionEvent e) { 
+int selectedRow = bookTable.getSelectedRow(); if (selectedRow >= 0) { 
+books.remove(selectedRow); tableModel.removeRow(selectedRow); saveBooks(); // Save updated book list to file 
+JOptionPane.showMessageDialog(null, "Book deleted successfully!"); 
+} else { 
+JOptionPane.showMessageDialog(null, "Please select a book to delete."); 
+} 
+} 
+} 
+ 
+ 
+// Load books from file private void loadBooks() { 
+try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("books.dat"))) { books = (ArrayList<Book>) ois.readObject(); for (Book book : books) { 
+tableModel.addRow(book.toTableRow()); } 
+} catch (FileNotFoundException e) { 
+// File not found; no books to load 
+} catch (IOException | ClassNotFoundException e) { 
+JOptionPane.showMessageDialog(null, "Error loading books: " + e.getMessage()); 
+} } 
+// Save books to file private void saveBooks() { try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("books.dat"))) { oos.writeObject(books); } catch (IOException e) { 
+JOptionPane.showMessageDialog(null, "Error saving books: " + e.getMessage()); 
+} 
+} 
+ 
+ 
+public static void main(String[] args) { 
+SwingUtilities.invokeLater(() -> new LibraryManagementSystem()); 
+} 
+} 
